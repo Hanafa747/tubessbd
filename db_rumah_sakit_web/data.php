@@ -4,14 +4,15 @@ require_once __DIR__ . '/config/auth.php';
 wajib_login();
 
 $definitions = [
-    'admin' => [
-        'title'=>'Data Admin', 'table'=>'admin', 'pk'=>'id_admin',
+    'akun_admin' => [
+        'title'=>'Akun Admin', 'table'=>'akun_admin', 'pk'=>'id_admin',
         'fields'=>[
             'nama_admin'=>['Nama admin','text'],
             'username'=>['Username','text'],
-            'password'=>['Password','password']
+            'password'=>['Password','password'],
+            'role'=>['Hak akses','enum',['administrator','admin']]
         ],
-        'columns'=>['id_admin'=>'ID','nama_admin'=>'Nama admin','username'=>'Username']
+        'columns'=>['id_admin'=>'ID','nama_admin'=>'Nama admin','username'=>'Username','role'=>'Hak akses']
     ],
     'pasien' => [
         'title'=>'Data Pasien', 'table'=>'pasien', 'pk'=>'id_pasien',
@@ -63,6 +64,7 @@ $definitions = [
 ];
 
 $key = $_GET['t'] ?? 'pasien';
+if ($key === 'admin') { $key = 'akun_admin'; }
 if (!isset($definitions[$key])) {
     http_response_code(404);
     exit('Halaman tidak ditemukan.');
@@ -82,11 +84,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     try {
         if ($action === 'delete') {
+            if ($key === 'akun_admin' && !adalah_administrator()) { throw new RuntimeException('Admin biasa hanya dapat melihat akun miliknya sendiri.'); }
             $id = (int)($_POST['id'] ?? 0);
             $stmt = $pdo->prepare("DELETE FROM `$table` WHERE `$pk` = ?");
             $stmt->execute([$id]);
             $success = $stmt->rowCount() ? 'Data berhasil dihapus.' : 'Data tidak ditemukan.';
         } elseif ($action === 'save') {
+            if ($key === 'akun_admin' && !adalah_administrator()) { throw new RuntimeException('Admin biasa tidak boleh mengubah akun admin.'); }
             $id = (int)($_POST['id'] ?? 0);
             $values = [];
 
@@ -124,7 +128,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $success = 'Data baru berhasil ditambahkan.';
             }
         }
-    } catch (PDOException $exception) {
+    } catch (RuntimeException $exception) { $error = $exception->getMessage(); }
+    catch (PDOException $exception) {
         if ($exception->getCode() === '23000') {
             $error = 'Data tidak dapat diproses. Periksa kemungkinan username/nama poli duplikat atau data masih terhubung dengan tabel lain.';
         } else {
@@ -134,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $editRow = null;
-if (isset($_GET['edit'])) {
+if (isset($_GET['edit']) && ($key !== 'akun_admin' || adalah_administrator())) {
     $stmt = $pdo->prepare("SELECT * FROM `$table` WHERE `$pk` = ?");
     $stmt->execute([(int)$_GET['edit']]);
     $editRow = $stmt->fetch();
@@ -144,6 +149,12 @@ if ($key === 'dokter') {
     $rows = $pdo->query("SELECT d.id_dokter, d.nama_dokter, d.spesialisasi, p.nama_poli FROM dokter d JOIN poli p ON d.id_poli=p.id_poli ORDER BY d.id_dokter DESC")->fetchAll();
 } elseif ($key === 'pendaftaran') {
     $rows = $pdo->query("SELECT p.id_pendaftaran, p.tanggal_daftar, p.status, ps.nama_pasien, d.nama_dokter FROM pendaftaran p JOIN pasien ps ON p.id_pasien=ps.id_pasien JOIN dokter d ON p.id_dokter=d.id_dokter ORDER BY p.id_pendaftaran DESC")->fetchAll();
+} elseif ($key === 'akun_admin' && !adalah_administrator()) {
+    $stmt = $pdo->prepare("SELECT id_admin,nama_admin,username,role FROM akun_admin WHERE id_admin=?");
+    $stmt->execute([$_SESSION['admin_id']]);
+    $rows = $stmt->fetchAll();
+} elseif ($key === 'akun_admin') {
+    $rows = $pdo->query("SELECT id_admin,nama_admin,username,role FROM akun_admin ORDER BY id_admin DESC")->fetchAll();
 } else {
     $rows = $pdo->query("SELECT * FROM `$table` ORDER BY `$pk` DESC")->fetchAll();
 }
@@ -154,13 +165,13 @@ require __DIR__ . '/partials/header.php';
 ?>
 <div class="page-intro">
     <div><p>Kelola informasi <?= h(strtolower($config['title'])) ?> di sini. Kamu bisa menambah, mengubah, dan menghapus data.</p></div>
-    <a class="btn primary" href="data.php?t=<?= h($key) ?>&add=1">＋ Tambah data</a>
+    <?php if ($key !== "akun_admin" || adalah_administrator()): ?><a class="btn primary" href="data.php?t=<?= h($key) ?>&add=1">＋ Tambah data</a><?php endif; ?>
 </div>
 
 <?php if ($success): ?><div class="alert success"><?= h($success) ?></div><?php endif; ?>
 <?php if ($error): ?><div class="alert error"><?= h($error) ?></div><?php endif; ?>
 
-<?php if (isset($_GET['add']) || $editRow): ?>
+<?php if ((isset($_GET['add']) || $editRow) && ($key !== 'akun_admin' || adalah_administrator())): ?>
 <section class="panel form-panel">
     <div class="panel-heading"><div><h2><?= $editRow ? 'Ubah data' : 'Tambah data baru' ?></h2><p>Isi kolom di bawah ini, lalu tekan tombol simpan.</p></div><a class="link-more" href="data.php?t=<?= h($key) ?>">Tutup ✕</a></div>
     <form method="post" class="data-form">
@@ -196,20 +207,20 @@ require __DIR__ . '/partials/header.php';
 <section class="panel">
     <div class="panel-heading"><div><h2>Daftar <?= h($config['title']) ?></h2><p><?= count($rows) ?> data ditemukan</p></div></div>
     <div class="table-scroll"><table>
-        <thead><tr><?php foreach ($config['columns'] as $label): ?><th><?= h($label) ?></th><?php endforeach; ?><th>Aksi</th></tr></thead>
+        <thead><tr><?php foreach ($config['columns'] as $label): ?><th><?= h($label) ?></th><?php endforeach; ?><?php if ($key !== "akun_admin" || adalah_administrator()): ?><th>Aksi</th><?php endif; ?></tr></thead>
         <tbody>
         <?php if (!$rows): ?><tr><td class="empty-state" colspan="<?= count($config['columns']) + 1 ?>">Belum ada data. Klik “Tambah data” untuk memasukkan data pertama.</td></tr><?php endif; ?>
         <?php foreach ($rows as $row): ?>
         <tr>
             <?php foreach ($config['columns'] as $column => $label): ?><td><?= h($row[$column] ?? '-') ?></td><?php endforeach; ?>
-            <td><div class="row-actions">
+            <?php if ($key !== "akun_admin" || adalah_administrator()): ?><td><div class="row-actions">
                 <a class="edit-action" href="data.php?t=<?= h($key) ?>&edit=<?= (int)$row[$pk] ?>">Ubah</a>
                 <form method="post" onsubmit="return confirm('Yakin ingin menghapus data ini? Data yang masih digunakan tabel lain tidak dapat dihapus.')">
                     <input type="hidden" name="action" value="delete">
                     <input type="hidden" name="id" value="<?= (int)$row[$pk] ?>">
                     <button class="delete-action" type="submit">Hapus</button>
                 </form>
-            </div></td>
+            </div></td><?php endif; ?>
         </tr>
         <?php endforeach; ?>
         </tbody>
