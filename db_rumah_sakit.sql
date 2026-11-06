@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Nov 05, 2026 at 07:31 AM
+-- Generation Time: Nov 06, 2026 at 05:02 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -24,31 +24,57 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Table structure for table `admin`
+-- Table structure for table `akun_admin`
 --
 
-CREATE TABLE `admin` (
+CREATE TABLE `akun_admin` (
   `id_admin` int(11) NOT NULL,
   `nama_admin` varchar(100) NOT NULL,
   `username` varchar(50) NOT NULL,
-  `password` varchar(255) NOT NULL
+  `password` varchar(255) NOT NULL,
+  `role` enum('administrator','admin') NOT NULL DEFAULT 'admin'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `admin`
+-- Dumping data for table `akun_admin`
 --
 
-INSERT INTO `admin` (`id_admin`, `nama_admin`, `username`, `password`) VALUES
-(1, 'Administrator', 'admin', '$2y$10$MOw.MOAuct0GN0qvIaJ5z.d3.dEykSaUjhkRnE0uD1/pt0jc2AHva'),
-(2, 'Admin Rumah Sakit 1', 'admin1', 'admin123'),
-(3, 'Admin Rumah Sakit 2', 'admin2', 'admin123'),
-(4, 'Admin Rumah Sakit 3', 'admin3', 'admin123'),
-(5, 'Admin Rumah Sakit 4', 'admin4', 'admin123'),
-(6, 'Admin Rumah Sakit 5', 'admin5', 'admin123'),
-(7, 'Admin Rumah Sakit 6', 'admin6', 'admin123'),
-(8, 'Admin Rumah Sakit 7', 'admin7', 'admin123'),
-(9, 'Admin Rumah Sakit 8', 'admin8', 'admin123'),
-(10, 'Admin Rumah Sakit 9', 'admin9', 'admin123');
+INSERT INTO `akun_admin` (`id_admin`, `nama_admin`, `username`, `password`, `role`) VALUES
+(1, 'Administrator', 'admin', '$2y$10$MOw.MOAuct0GN0qvIaJ5z.d3.dEykSaUjhkRnE0uD1/pt0jc2AHva', 'administrator'),
+(2, 'Admin Rumah Sakit 1', 'admin1', '$2y$10$GHuFz2MGrd9VHtlsIaBD7e2igJ397/l0cfp5x9zu0X8Atk49Q643O', 'admin'),
+(3, 'Admin Rumah Sakit 2', 'admin2', 'admin123', 'admin'),
+(4, 'Admin Rumah Sakit 3', 'admin3', 'admin123', 'admin'),
+(5, 'Admin Rumah Sakit 4', 'admin4', 'admin123', 'admin'),
+(6, 'Admin Rumah Sakit 5', 'admin5', 'admin123', 'admin'),
+(7, 'Admin Rumah Sakit 6', 'admin6', 'admin123', 'admin'),
+(8, 'Admin Rumah Sakit 7', 'admin7', 'admin123', 'admin'),
+(9, 'Admin Rumah Sakit 8', 'admin8', 'admin123', 'admin'),
+(10, 'Admin Rumah Sakit 9', 'admin9', 'admin123', 'admin'),
+(11, 'Admin Rumah Sakit 10', 'admin10', '$2y$10$wtP6EdYRU2aasjFjIoCM0.tqWgf5HOE6N.Wp9MkJykNIejlvBHBTO', 'admin');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `antrean`
+--
+
+CREATE TABLE `antrean` (
+  `id_antrean` int(11) NOT NULL,
+  `id_pendaftaran` int(11) NOT NULL,
+  `id_poli` int(11) NOT NULL,
+  `nomor_antrean` int(11) NOT NULL,
+  `tanggal_antrean` date NOT NULL,
+  `status` enum('Menunggu','Diperiksa','Selesai','Batal') NOT NULL DEFAULT 'Menunggu',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `antrean`
+--
+
+INSERT INTO `antrean` (`id_antrean`, `id_pendaftaran`, `id_poli`, `nomor_antrean`, `tanggal_antrean`, `status`, `created_at`) VALUES
+(1, 4, 4, 1, '2026-10-23', 'Batal', '2026-11-06 14:02:20'),
+(2, 9, 9, 1, '2026-10-28', 'Selesai', '2026-11-06 14:04:04');
 
 -- --------------------------------------------------------
 
@@ -112,6 +138,18 @@ INSERT INTO `pasien` (`id_pasien`, `nama_pasien`, `jenis_kelamin`, `tanggal_lahi
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `pemulihan_password`
+--
+
+CREATE TABLE `pemulihan_password` (
+  `id` tinyint(4) NOT NULL,
+  `kode_hash` varchar(255) NOT NULL,
+  `dibuat_pada` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `pendaftaran`
 --
 
@@ -131,12 +169,12 @@ INSERT INTO `pendaftaran` (`id_pendaftaran`, `id_pasien`, `id_dokter`, `tanggal_
 (1, 1, 1, '2026-10-20', 'Selesai'),
 (2, 2, 2, '2026-10-21', 'Selesai'),
 (3, 3, 3, '2026-10-22', 'Selesai'),
-(4, 4, 4, '2026-10-23', 'Diperiksa'),
+(4, 4, 4, '2026-10-23', 'Batal'),
 (5, 5, 5, '2026-10-24', 'Selesai'),
 (6, 6, 6, '2026-10-25', 'Menunggu'),
 (7, 7, 7, '2026-10-26', 'Selesai'),
 (8, 8, 8, '2026-10-27', 'Diperiksa'),
-(9, 9, 9, '2026-10-28', 'Menunggu'),
+(9, 9, 9, '2026-10-28', 'Selesai'),
 (10, 10, 10, '2026-10-29', 'Selesai');
 
 -- --------------------------------------------------------
@@ -202,11 +240,19 @@ INSERT INTO `rekam_medis` (`id_rekam`, `id_pendaftaran`, `diagnosis`, `tindakan`
 --
 
 --
--- Indexes for table `admin`
+-- Indexes for table `akun_admin`
 --
-ALTER TABLE `admin`
+ALTER TABLE `akun_admin`
   ADD PRIMARY KEY (`id_admin`),
   ADD UNIQUE KEY `username` (`username`);
+
+--
+-- Indexes for table `antrean`
+--
+ALTER TABLE `antrean`
+  ADD PRIMARY KEY (`id_antrean`),
+  ADD UNIQUE KEY `id_pendaftaran` (`id_pendaftaran`),
+  ADD UNIQUE KEY `uq_antrean_poli_tanggal_nomor` (`id_poli`,`tanggal_antrean`,`nomor_antrean`);
 
 --
 -- Indexes for table `dokter`
@@ -220,6 +266,12 @@ ALTER TABLE `dokter`
 --
 ALTER TABLE `pasien`
   ADD PRIMARY KEY (`id_pasien`);
+
+--
+-- Indexes for table `pemulihan_password`
+--
+ALTER TABLE `pemulihan_password`
+  ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `pendaftaran`
@@ -248,10 +300,16 @@ ALTER TABLE `rekam_medis`
 --
 
 --
--- AUTO_INCREMENT for table `admin`
+-- AUTO_INCREMENT for table `akun_admin`
 --
-ALTER TABLE `admin`
-  MODIFY `id_admin` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+ALTER TABLE `akun_admin`
+  MODIFY `id_admin` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+
+--
+-- AUTO_INCREMENT for table `antrean`
+--
+ALTER TABLE `antrean`
+  MODIFY `id_antrean` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `dokter`
@@ -286,6 +344,13 @@ ALTER TABLE `rekam_medis`
 --
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `antrean`
+--
+ALTER TABLE `antrean`
+  ADD CONSTRAINT `fk_antrean_pendaftaran` FOREIGN KEY (`id_pendaftaran`) REFERENCES `pendaftaran` (`id_pendaftaran`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_antrean_poli` FOREIGN KEY (`id_poli`) REFERENCES `poli` (`id_poli`) ON UPDATE CASCADE;
 
 --
 -- Constraints for table `dokter`
